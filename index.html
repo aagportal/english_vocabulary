@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Vocabulario - Nuestro Mundo 🌍</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #f0f8ff; /* Azul claro de fondo */
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #ff6347; /* Rojo tomate */
+            margin-bottom: 20px;
+        }
+        .question-card {
+            background-color: #ffe0b2; /* Naranja pastel */
+            border: 3px solid #ff9800;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .word {
+            font-weight: bold;
+            color: #00bcd4; /* Azul turquesa */
+        }
+        input[type="text"] {
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 1.2em;
+            width: 80%;
+            text-align: center;
+        }
+        button {
+            background-color: #4caf50; /* Verde */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .feedback {
+            margin-top: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            min-height: 30px; /* Para mantener el espacio */
+        }
+        .score {
+            font-size: 1.5em;
+            margin-top: 10px;
+            color: #9c27b0; /* Morado */
+        }
+        .correct {
+            color: #4caf50; /* Verde para correcto */
+        }
+        .incorrect {
+            color: #f44336; /* Rojo para incorrecto */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Aprende y Juega con el Vocabulario! 🌟</h1>
+        <p>Escribe el significado correcto en español de la palabra que aparece.</p>
+
+        <div class="score">
+            Puntuación: <span id="current-score">0</span>
+        </div>
+
+        <div class="question-card">
+            <p>Palabra a traducir: <span id="current-word" class="word"></span></p>
+            <label for="answer-input">Escribe el significado:</label>
+            <input type="text" id="answer-input" placeholder="Ej: Tierra" autocomplete="off">
+            <button onclick="checkAnswer()">Comprobar Respuesta</button>
+        </div>
+        
+        <div id="feedback" class="feedback"></div>
+
+        <button onclick="nextQuestion()">Siguiente Palabra</button>
+    </div>
+
+    <script>
+      // El vocabulario de tu lista.
+const vocabulary = [
+    { english: "UNIVERSE", spanish: "UNIVERSO" },
+    { english: "SOLAR SYSTEM", spanish: "SISTEMA SOLAR" },
+    { english: "AXIS", spanish: "EJE" },
+    { english: "DUST", spanish: "POLVO" },
+    { english: "STAR", spanish: "ESTRELLA" },
+    { english: "SPIN", spanish: "GIRAR" },
+    { english: "TILT", spanish: "INCLINACIÓN" },
+    { english: "DRY SEASON", spanish: "ESTACIÓN SECA" },
+    { english: "EARTH", spanish: "TIERRA" },
+    { english: "EQUATOR", spanish: "ECUADOR" },
+    { english: "MOON", spanish: "LUNA" },
+    { english: "MILKY WAY", spanish: "VÍA LÁCTEA" },
+    { english: "ROTATION", spanish: "ROTACIÓN" },
+    { english: "ORBIT", spanish: "ÓRBITA" },
+    { english: "SATELLITE", spanish: "SATÉLITE" },
+    { english: "TIDES", spanish: "MAREAS" },
+    { english: "VOLCANO", spanish: "VOLCÁN" },
+    { english: "WET SEASON", spanish: "ESTACIÓN LLUVIOSA" },
+    { english: "NATURAL HAZARDS", spanish: "PELIGROS NATURALES" },
+    { english: "NATURAL DISASTERS", spanish: "DESASTRES NATURALES" },
+    { english: "SEASONS", spanish: "ESTACIONES" },
+    { english: "REVOLUTION", spanish: "VUELTA" },
+    { english: "NEW MOON", spanish: "LUNA NUEVA" },
+    { english: "FIRST QUARTER", spanish: "CUARTO CRECIENTE" },
+    { english: "FULL MOON", spanish: "LUNA LLENA" },
+    { english: "THIRD QUARTER", spanish: "CUARTO MENGUANTE" },
+    { english: "VENT", spanish: "VIENTO" },
+    { english: "FLOODING", spanish: "INUNDACIÓN" },
+    { english: "EARTHQUAKE", spanish: "TERREMOTO" }
+];
+
+let currentWordIndex = 0;
+let score = 0;
+// Nueva variable para saber si la pregunta está en 'english' o 'spanish'
+let questionLanguage = 'english'; 
+
+const currentWordElement = document.getElementById('current-word');
+const answerInput = document.getElementById('answer-input');
+const feedbackElement = document.getElementById('feedback');
+const scoreElement = document.getElementById('current-score');
+const instructionsElement = document.querySelector('.container p'); // Para cambiar las instrucciones
+
+// Función para limpiar y normalizar las respuestas
+function cleanString(str) {
+    // Convierte a mayúsculas y quita espacios extra.
+    return str.trim().toUpperCase();
+}
+
+// Función que selecciona el idioma de la pregunta y muestra la palabra actual
+function displayWord() {
+    const currentWord = vocabulary[currentWordIndex];
+    
+    // 50% de probabilidad de preguntar en inglés o en español
+    questionLanguage = (Math.random() < 0.5) ? 'english' : 'spanish'; 
+
+    if (questionLanguage === 'english') {
+        currentWordElement.textContent = currentWord.english;
+        instructionsElement.textContent = 'Traduce la palabra del inglés **al español** 👇';
+        answerInput.placeholder = 'Ej: TIERRA';
+    } else {
+        currentWordElement.textContent = currentWord.spanish;
+        instructionsElement.textContent = 'Traduce la palabra del español **al inglés** 👇';
+        answerInput.placeholder = 'Ej: EARTH';
+    }
+
+    answerInput.value = ''; // Limpia el campo de respuesta
+    feedbackElement.textContent = ''; // Limpia el mensaje de retroalimentación
+    answerInput.disabled = false; // Asegura que el input esté habilitado
+}
+
+// Función que comprueba la respuesta del estudiante
+function checkAnswer() {
+    if (answerInput.disabled) return;
+
+    const userAnswer = cleanString(answerInput.value);
+    const currentWord = vocabulary[currentWordIndex];
+    
+    let correctAnswer;
+    let targetLanguage;
+
+    // Determinar cuál es la respuesta correcta según el idioma de la pregunta
+    if (questionLanguage === 'english') {
+        // Pregunta en inglés, respuesta esperada en español
+        correctAnswer = cleanString(currentWord.spanish);
+        targetLanguage = currentWord.spanish;
+    } else {
+        // Pregunta en español, respuesta esperada en inglés
+        correctAnswer = cleanString(currentWord.english);
+        targetLanguage = currentWord.english;
+    }
+
+    if (userAnswer === correctAnswer) {
+        // Respuesta Correcta
+        feedbackElement.textContent = '🎉 ¡Correcto! ¡Muy bien! 🎉';
+        feedbackElement.className = 'feedback correct';
+        score++;
+    } else {
+        // Respuesta Incorrecta
+        feedbackElement.textContent = `❌ Incorrecto. La respuesta correcta era: ${targetLanguage}`;
+        feedbackElement.className = 'feedback incorrect';
+    }
+    
+    // Actualiza la puntuación y deshabilita el input
+    scoreElement.textContent = score;
+    answerInput.disabled = true;
+}
+
+// Función para pasar a la siguiente pregunta
+function nextQuestion() {
+    if (currentWordIndex < vocabulary.length - 1) {
+        currentWordIndex++;
+        displayWord();
+    } else {
+        // Fin del juego
+        feedbackElement.textContent = `¡FIN DEL JUEGO! 🏆 Tu puntuación final es: ${score} de ${vocabulary.length}`;
+        feedbackElement.className = 'feedback correct';
+        currentWordElement.textContent = '🥳 ¡Juego Terminado! 🥳';
+        answerInput.style.display = 'none'; 
+        document.querySelector('button[onclick="checkAnswer()"]').style.display = 'none'; 
+        document.querySelector('button[onclick="nextQuestion()"]').textContent = 'Empezar de Nuevo';
+        document.querySelector('button[onclick="nextQuestion()"]').onclick = restartGame; 
+        instructionsElement.textContent = 'Presiona "Empezar de Nuevo" para un nuevo reto.';
+    }
+}
+
+// Función para reiniciar el juego
+function restartGame() {
+    // Mezcla el vocabulario para que sea un juego diferente
+    vocabulary.sort(() => Math.random() - 0.5); 
+    
+    currentWordIndex = 0;
+    score = 0;
+    scoreElement.textContent = score;
+    answerInput.style.display = 'block';
+    document.querySelector('button[onclick="checkAnswer()"]').style.display = 'block';
+    document.querySelector('button[onclick="nextQuestion()"]').textContent = 'Siguiente Palabra';
+    document.querySelector('button[onclick="nextQuestion()"]').onclick = nextQuestion;
+    displayWord();
+}
+
+// Inicializa el juego al cargar la página
+restartGame();
+    </script>
+</body>
+</html>
